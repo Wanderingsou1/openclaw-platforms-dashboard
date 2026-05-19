@@ -1,0 +1,14 @@
+import { NextResponse } from 'next/server'
+import { getGoogleChatConnectedEmail, loadGoogleChatConfig, readLatestGoogleChatImport } from '@/lib/googlechat'
+
+export async function GET() {
+  const config = loadGoogleChatConfig()
+  const latestImport = readLatestGoogleChatImport()
+  const importedCount = latestImport.length
+  return NextResponse.json({
+    connected: !!config,
+    accountEmail: getGoogleChatConnectedEmail() ?? '',
+    defaultSpaceId: config?.defaultSpaceId ?? latestImport[latestImport.length - 1]?.spaceId ?? '',
+    importedCount,
+  })
+}
