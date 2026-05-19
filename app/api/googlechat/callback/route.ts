@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import { getGoogleChatRedirectUriFromRequest, saveGoogleChatConfig } from '@/lib/googlechat'
+import { getGoogleChatRedirectUriFromRequest, setGoogleChatConfig } from '@/lib/googlechat'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
       console.warn('Google Chat callback: unable to read user email', lookupErr)
     }
 
-    await saveGoogleChatConfig({
+    const response = NextResponse.redirect(`${homeUrl}?googlechat=connected&email=${encodeURIComponent(email)}`)
+    setGoogleChatConfig(response, {
       access_token: tokens.access_token ?? undefined,
       refresh_token: tokens.refresh_token ?? undefined,
       scope: tokens.scope ?? undefined,
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
       connectedAt: new Date().toISOString(),
     })
 
-    return NextResponse.redirect(`${homeUrl}?googlechat=connected&email=${encodeURIComponent(email)}`)
+    return response
   } catch (err) {
     console.error('Google Chat callback failed', err)
     return NextResponse.redirect(`${homeUrl}?googlechat=error`)

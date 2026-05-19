@@ -1,8 +1,48 @@
 import { google } from 'googleapis'
 import fs from 'fs'
 import path from 'path'
-import { readGoogleChatJson, writeGoogleChatJson } from './googlechat-storage'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 import { getWorkspacePath, writeWorkspaceJSON } from './workspace'
+
+const GOOGLE_CHAT_CONFIG_COOKIE = 'openclaw_googlechat_config'
+const GOOGLE_CHAT_STATE_COOKIE = 'openclaw_googlechat_state'
+const GOOGLE_CHAT_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
+
+function cookieOptions(maxAge = GOOGLE_CHAT_COOKIE_MAX_AGE) {
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge,
+  }
+}
+
+function encodeCookieValue(value: unknown) {
+  return Buffer.from(JSON.stringify(value)).toString('base64url')
+}
+
+function decodeCookieValue<T>(value?: string | null): T | null {
+  if (!value) return null
+  try {
+    return JSON.parse(Buffer.from(value, 'base64url').toString('utf-8')) as T
+  } catch {
+    return null
+  }
+}
+
+function readCookieValue<T>(name: string): T | null {
+  return decodeCookieValue<T>(cookies().get(name)?.value)
+}
+
+function setCookieValue(response: NextResponse, name: string, value: unknown) {
+  response.cookies.set(name, encodeCookieValue(value), cookieOptions())
+}
+
+function clearCookieValue(response: NextResponse, name: string) {
+  response.cookies.set(name, '', cookieOptions(0))
+}
 
 export function getPublicAppUrl() {
   const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL
@@ -79,19 +119,27 @@ export interface GoogleChatPolledRow {
 export type GoogleChatWebhookRow = GoogleChatPolledRow
 
 export async function loadGoogleChatConfig(): Promise<GoogleChatConfig | null> {
-  return readGoogleChatJson<GoogleChatConfig>('token.json')
+  return readCookieValue<GoogleChatConfig>(GOOGLE_CHAT_CONFIG_COOKIE)
 }
 
-export async function saveGoogleChatConfig(config: GoogleChatConfig) {
-  await writeGoogleChatJson('token.json', config)
+export function setGoogleChatConfig(response: NextResponse, config: GoogleChatConfig) {
+  setCookieValue(response, GOOGLE_CHAT_CONFIG_COOKIE, config)
 }
 
 async function loadGoogleChatState(): Promise<GoogleChatState> {
-  return (await readGoogleChatJson<GoogleChatState>('state.json')) ?? {}
+  return readCookieValue<GoogleChatState>(GOOGLE_CHAT_STATE_COOKIE) ?? {}
 }
 
-async function saveGoogleChatState(state: GoogleChatState) {
-  await writeGoogleChatJson('state.json', state)
+export function setGoogleChatState(response: NextResponse, state: GoogleChatState) {
+  setCookieValue(response, GOOGLE_CHAT_STATE_COOKIE, state)
+}
+
+export function clearGoogleChatState(response: NextResponse) {
+  clearCookieValue(response, GOOGLE_CHAT_STATE_COOKIE)
+}
+
+export function clearGoogleChatConfig(response: NextResponse) {
+  clearCookieValue(response, GOOGLE_CHAT_CONFIG_COOKIE)
 }
 
 export function getGoogleChatOAuthClient() {
@@ -294,10 +342,12 @@ export async function fetchGoogleChatMessages(): Promise<GoogleChatPolledRow[]> 
   return rows.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 }
 
-export async function importGoogleChatMessages(limit = 50): Promise<GoogleChatMessage[]> {
+export async function importGoogleChatMessages(
+  limit = 50
+): Promise<{ messages: GoogleChatMessage[]; state?: GoogleChatState }> {
   const webhookRows = readWebhookFile().filter((r) => r.text.trim() && r.incoming)
   if (webhookRows.length > 0) {
-    return webhookRows.slice(-limit).map((r) => ({
+    const messages = webhookRows.slice(-limit).map((r) => ({
       id: r.id,
       spaceId: r.spaceId,
       spaceName: r.spaceName,
@@ -308,17 +358,20 @@ export async function importGoogleChatMessages(limit = 50): Promise<GoogleChatMe
       incoming: r.incoming,
       threadName: r.threadName,
     }))
+    const latest = webhookRows[webhookRows.length - 1]
+    return {
+      messages,
+      state: latest
+        ? {
+            lastImportedAt: latest.date,
+            lastImportedMessageId: latest.id,
+          }
+        : undefined,
+    }
   }
 
   const rows = readPolledFile().filter((r) => r.text.trim())
-  if (rows.length > 0) {
-    const latest = rows[rows.length - 1]
-    await saveGoogleChatState({
-      lastImportedAt: latest.date,
-      lastImportedMessageId: latest.id,
-    })
-  }
-  return rows.filter((r) => r.incoming).slice(-limit).map((r) => ({
+  const messages = rows.filter((r) => r.incoming).slice(-limit).map((r) => ({
     id: r.id,
     spaceId: r.spaceId,
     spaceName: r.spaceName,
@@ -329,6 +382,16 @@ export async function importGoogleChatMessages(limit = 50): Promise<GoogleChatMe
     incoming: r.incoming,
     threadName: r.threadName,
   }))
+  const latest = rows[rows.length - 1]
+  return {
+    messages,
+    state: latest
+      ? {
+          lastImportedAt: latest.date,
+          lastImportedMessageId: latest.id,
+        }
+      : undefined,
+  }
 }
 
 export function readLatestGoogleChatImport(max = 10): GoogleChatMessage[] {

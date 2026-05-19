@@ -6,6 +6,7 @@ import {
   fetchGoogleChatMessages,
   importGoogleChatMessages,
   loadGoogleChatConfig,
+  setGoogleChatState,
 } from '@/lib/googlechat'
 
 export const dynamic = 'force-dynamic'
@@ -23,10 +24,15 @@ export async function POST() {
       appendGoogleChatPolledMessages(newRows)
     }
 
-    const messages = await importGoogleChatMessages(50)
+    const { messages, state } = await importGoogleChatMessages(50)
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const messagesFile = `googlechat-import/messages-${timestamp}.json`
     const styleFile = 'googlechat-import/style-profile.json'
+    const payload = {
+      success: true,
+      count: messages.length,
+      files: messages.length > 0 ? [messagesFile, styleFile] : [],
+    }
 
     if (messages.length > 0) {
       const latestSpace = messages[messages.length - 1]?.spaceId ?? config.defaultSpaceId ?? ''
@@ -40,11 +46,11 @@ export async function POST() {
       writeWorkspaceJSON(styleFile, buildGoogleChatStyleProfile(messages, config.email))
     }
 
-    return NextResponse.json({
-      success: true,
-      count: messages.length,
-      files: messages.length > 0 ? [messagesFile, styleFile] : [],
-    })
+    const response = NextResponse.json(payload)
+    if (state) {
+      setGoogleChatState(response, state)
+    }
+    return response
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message ?? 'Google Chat import failed' }, { status: 500 })
   }
