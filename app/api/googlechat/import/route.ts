@@ -10,7 +10,7 @@ import {
 
 export async function POST() {
   try {
-    const config = loadGoogleChatConfig()
+    const config = await loadGoogleChatConfig()
     if (!config?.email) {
       return NextResponse.json({ success: false, error: 'Google Chat is not connected yet' }, { status: 400 })
     }

@@ -238,8 +238,8 @@ function fetchLineMessages(): IncomingMessage[] {
   })
 }
 
-function fetchGoogleChatMessages(): IncomingMessage[] {
-  const config = loadGoogleChatConfig()
+async function fetchGoogleChatMessages(): Promise<IncomingMessage[]> {
+  const config = await loadGoogleChatConfig()
   const msgs = readLatestGoogleChatImport(25).reverse()
   return msgs.map((m) => {
     const id = `googlechat:${m.id}`
@@ -312,7 +312,7 @@ export async function GET() {
   }
 
   try {
-    messages.push(...fetchGoogleChatMessages())
+    messages.push(...(await fetchGoogleChatMessages()))
   } catch (err: any) {
     warnings.push(`googlechat: ${err.message}`)
   }

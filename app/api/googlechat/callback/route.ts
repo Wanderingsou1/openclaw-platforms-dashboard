@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import fs from 'fs'
-import path from 'path'
-import { getGoogleChatRedirectUriFromRequest } from '@/lib/googlechat'
-import { getWorkspaceRoot } from '@/lib/workspace'
-
-const TOKEN_FILE = path.join(getWorkspaceRoot(), 'googlechat-token.json')
+import { getGoogleChatRedirectUriFromRequest, saveGoogleChatConfig } from '@/lib/googlechat'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
@@ -35,8 +30,15 @@ export async function GET(req: NextRequest) {
       console.warn('Google Chat callback: unable to read user email', lookupErr)
     }
 
-    fs.mkdirSync(path.dirname(TOKEN_FILE), { recursive: true })
-    fs.writeFileSync(TOKEN_FILE, JSON.stringify({ ...tokens, email, connectedAt: new Date().toISOString() }, null, 2))
+    await saveGoogleChatConfig({
+      access_token: tokens.access_token ?? undefined,
+      refresh_token: tokens.refresh_token ?? undefined,
+      scope: tokens.scope ?? undefined,
+      token_type: tokens.token_type ?? undefined,
+      expiry_date: tokens.expiry_date ?? undefined,
+      email,
+      connectedAt: new Date().toISOString(),
+    })
 
     return NextResponse.redirect(`${homeUrl}?googlechat=connected&email=${encodeURIComponent(email)}`)
   } catch (err) {

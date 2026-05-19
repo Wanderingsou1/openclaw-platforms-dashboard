@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server'
 import { getGoogleChatConnectedEmail, loadGoogleChatConfig, readLatestGoogleChatImport } from '@/lib/googlechat'
 
 export async function GET() {
-  const config = loadGoogleChatConfig()
+  const config = await loadGoogleChatConfig()
   const latestImport = readLatestGoogleChatImport()
   const importedCount = latestImport.length
   return NextResponse.json({
     connected: !!config,
-    accountEmail: getGoogleChatConnectedEmail() ?? '',
+    accountEmail: (await getGoogleChatConnectedEmail()) ?? '',
     defaultSpaceId: config?.defaultSpaceId ?? latestImport[latestImport.length - 1]?.spaceId ?? '',
     importedCount,
   })

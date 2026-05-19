@@ -1,13 +1,12 @@
 import fs from 'fs'
 import { NextResponse } from 'next/server'
 import { getWorkspacePath } from '@/lib/workspace'
+import { deleteGoogleChatJson } from '@/lib/googlechat-storage'
 
 export async function POST() {
   try {
-    const config = getWorkspacePath('googlechat-token.json')
-    if (fs.existsSync(config)) fs.unlinkSync(config)
-    const state = getWorkspacePath('googlechat-state.json')
-    if (fs.existsSync(state)) fs.unlinkSync(state)
+    await deleteGoogleChatJson('token.json')
+    await deleteGoogleChatJson('state.json')
     const polled = getWorkspacePath('googlechat-import', 'polled-inbox.json')
     if (fs.existsSync(polled)) fs.unlinkSync(polled)
     return NextResponse.json({ disconnected: true })

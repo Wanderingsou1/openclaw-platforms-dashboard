@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
 
   if (platform === 'googlechat') {
     try {
-      const config = loadGoogleChatConfig()
+      const config = await loadGoogleChatConfig()
       if (!config?.email) {
         return NextResponse.json({ sent: false, error: 'Google Chat is not connected' }, { status: 400 })
       }

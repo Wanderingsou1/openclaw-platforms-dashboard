@@ -1,12 +1,8 @@
 import { google } from 'googleapis'
 import fs from 'fs'
 import path from 'path'
-import { getWorkspacePath, getWorkspaceRoot, writeWorkspaceJSON } from './workspace'
-
-const TOKEN_FILE = path.join(
-  getWorkspaceRoot(),
-  'googlechat-token.json'
-)
+import { readGoogleChatJson, writeGoogleChatJson } from './googlechat-storage'
+import { getWorkspacePath, writeWorkspaceJSON } from './workspace'
 
 export function getPublicAppUrl() {
   const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL
@@ -82,37 +78,20 @@ export interface GoogleChatPolledRow {
 
 export type GoogleChatWebhookRow = GoogleChatPolledRow
 
-function loadTokens() {
-  if (fs.existsSync(TOKEN_FILE)) {
-    return JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf-8'))
-  }
-  return {
-    refresh_token: process.env.GOOGLE_CHAT_REFRESH_TOKEN,
-    access_token: process.env.GOOGLE_CHAT_ACCESS_TOKEN,
-  }
+export async function loadGoogleChatConfig(): Promise<GoogleChatConfig | null> {
+  return readGoogleChatJson<GoogleChatConfig>('token.json')
 }
 
-export function loadGoogleChatConfig(): GoogleChatConfig | null {
-  if (!fs.existsSync(TOKEN_FILE)) return null
-  return JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf-8'))
+export async function saveGoogleChatConfig(config: GoogleChatConfig) {
+  await writeGoogleChatJson('token.json', config)
 }
 
-export function saveGoogleChatConfig(config: GoogleChatConfig) {
-  writeWorkspaceJSON('googlechat-token.json', config)
+async function loadGoogleChatState(): Promise<GoogleChatState> {
+  return (await readGoogleChatJson<GoogleChatState>('state.json')) ?? {}
 }
 
-function loadGoogleChatState(): GoogleChatState {
-  const file = getWorkspacePath('googlechat-state.json')
-  if (!fs.existsSync(file)) return {}
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8')) as GoogleChatState
-  } catch {
-    return {}
-  }
-}
-
-function saveGoogleChatState(state: GoogleChatState) {
-  writeWorkspaceJSON('googlechat-state.json', state)
+async function saveGoogleChatState(state: GoogleChatState) {
+  await writeGoogleChatJson('state.json', state)
 }
 
 export function getGoogleChatOAuthClient() {
@@ -123,22 +102,31 @@ export function getGoogleChatOAuthClient() {
   )
 }
 
-export function getGoogleChatClient() {
+async function loadTokens() {
+  const config = await loadGoogleChatConfig()
+  if (config) return config
+  return {
+    refresh_token: process.env.GOOGLE_CHAT_REFRESH_TOKEN,
+    access_token: process.env.GOOGLE_CHAT_ACCESS_TOKEN,
+  }
+}
+
+export async function getGoogleChatClient() {
   const auth = getGoogleChatOAuthClient()
-  auth.setCredentials(loadTokens())
+  auth.setCredentials(await loadTokens())
   return google.chat({ version: 'v1', auth })
 }
 
 export async function verifyGoogleChatConnection() {
   const auth = getGoogleChatOAuthClient()
-  auth.setCredentials(loadTokens())
+  auth.setCredentials(await loadTokens())
   const oauth2 = google.oauth2({ version: 'v2', auth })
   const profile = await oauth2.userinfo.get()
   return profile.data.email ?? ''
 }
 
 async function listAllSpaces() {
-  const chat = getGoogleChatClient()
+  const chat = await getGoogleChatClient()
   const spaces: Array<{ name?: string; displayName?: string; spaceType?: string }> = []
   let pageToken: string | undefined
   do {
@@ -154,7 +142,7 @@ async function listAllSpaces() {
 }
 
 async function listMessagesForSpace(spaceName: string, createdAfter?: string) {
-  const chat = getGoogleChatClient()
+  const chat = await getGoogleChatClient()
   const rows: Array<Record<string, any>> = []
   let pageToken: string | undefined
   do {
@@ -268,12 +256,12 @@ export function appendGoogleChatPolledMessages(newRows: GoogleChatPolledRow[]) {
 }
 
 export async function fetchGoogleChatMessages(): Promise<GoogleChatPolledRow[]> {
-  const config = loadGoogleChatConfig()
+  const config = await loadGoogleChatConfig()
   if (!config?.email) {
     throw new Error('Google Chat is not connected yet')
   }
 
-  const state = loadGoogleChatState()
+  const state = await loadGoogleChatState()
   const filterSince = state.lastImportedAt ? new Date(state.lastImportedAt).toISOString() : ''
   const spaces = await listAllSpaces()
   const rows: GoogleChatPolledRow[] = []
@@ -325,7 +313,7 @@ export async function importGoogleChatMessages(limit = 50): Promise<GoogleChatMe
   const rows = readPolledFile().filter((r) => r.text.trim())
   if (rows.length > 0) {
     const latest = rows[rows.length - 1]
-    saveGoogleChatState({
+    await saveGoogleChatState({
       lastImportedAt: latest.date,
       lastImportedMessageId: latest.id,
     })
@@ -365,7 +353,7 @@ export function buildGoogleChatStyleProfile(messages: GoogleChatMessage[], accou
 }
 
 export async function sendGoogleChatMessage(spaceId: string, text: string, threadName?: string) {
-  const chat = getGoogleChatClient()
+  const chat = await getGoogleChatClient()
   const requestBody: Record<string, unknown> = { text }
   if (threadName) {
     requestBody.thread = {
@@ -378,6 +366,6 @@ export async function sendGoogleChatMessage(spaceId: string, text: string, threa
   })
 }
 
-export function getGoogleChatConnectedEmail(): string | null {
-  return loadGoogleChatConfig()?.email ?? null
+export async function getGoogleChatConnectedEmail(): Promise<string | null> {
+  return (await loadGoogleChatConfig())?.email ?? null
 }
