@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { GOOGLE_CHAT_SCOPES, getGoogleChatRedirectUriFromRequest } from '@/lib/googlechat'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET(req: NextRequest) {
   const oauth2 = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,

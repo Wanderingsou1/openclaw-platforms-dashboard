@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server'
 import { getWorkspacePath } from '@/lib/workspace'
 import { deleteGoogleChatJson } from '@/lib/googlechat-storage'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function POST() {
   try {
     await deleteGoogleChatJson('token.json')

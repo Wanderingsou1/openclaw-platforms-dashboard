@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { getGoogleChatRedirectUriFromRequest, saveGoogleChatConfig } from '@/lib/googlechat'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
   const error = req.nextUrl.searchParams.get('error')

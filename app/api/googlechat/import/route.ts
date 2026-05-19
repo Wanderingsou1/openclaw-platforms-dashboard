@@ -8,6 +8,9 @@ import {
   loadGoogleChatConfig,
 } from '@/lib/googlechat'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function POST() {
   try {
     const config = await loadGoogleChatConfig()
