@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
-import { loadLineDemoFile, lineDemoIsEnabled } from '../../simulation/demo-simulations'
+import { loadLineDemoFile, lineDemoIsEnabled } from './demo-simulations'
 import { getWorkspacePath, writeWorkspaceJSON } from './workspace'
 
 const LINE_API = 'https://api.line.me/v2/bot'

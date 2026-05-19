@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
-import { loadWeChatDemoFile, weChatDemoIsEnabled } from '../../simulation/demo-simulations'
+import { loadWeChatDemoFile, weChatDemoIsEnabled } from './demo-simulations'
 import { getWorkspacePath, writeWorkspaceJSON } from './workspace'
 
 export interface WeChatConfig {

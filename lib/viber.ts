@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { loadViberDemoFile, viberDemoIsEnabled } from '../../simulation/demo-simulations'
+import { loadViberDemoFile, viberDemoIsEnabled } from './demo-simulations'
 import { getWorkspacePath, writeWorkspaceJSON } from './workspace'
 
 const VIBER_API = 'https://chatapi.viber.com/pa'

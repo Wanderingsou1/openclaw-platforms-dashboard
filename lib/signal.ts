@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { loadSignalDemoFile, signalDemoIsEnabled } from '../../simulation/demo-simulations'
+import { loadSignalDemoFile, signalDemoIsEnabled } from './demo-simulations'
 import { getWorkspacePath, writeWorkspaceJSON } from './workspace'
 
 export interface SignalConfig {
