@@ -3,7 +3,7 @@ import { google } from 'googleapis'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { getGoogleChatRedirectUri } from '@/lib/googlechat'
+import { getGoogleChatRedirectUriFromRequest } from '@/lib/googlechat'
 
 const TOKEN_FILE = path.join(
   process.env.WORKSPACE_PATH ?? path.join(os.homedir(), '.openclaw', 'workspace'),
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const oauth2 = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    getGoogleChatRedirectUri()
+    getGoogleChatRedirectUriFromRequest(req.url)
   )
 
   try {

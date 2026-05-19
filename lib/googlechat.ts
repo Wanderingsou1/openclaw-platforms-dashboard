@@ -25,6 +25,10 @@ export function getGoogleChatRedirectUri() {
   return process.env.GOOGLE_CHAT_REDIRECT_URI ?? `${getPublicAppUrl()}/api/googlechat/callback`
 }
 
+export function getGoogleChatRedirectUriFromRequest(requestUrl: string) {
+  return new URL('/api/googlechat/callback', requestUrl).toString()
+}
+
 export const GOOGLE_CHAT_SCOPES = [
   'https://www.googleapis.com/auth/chat.spaces.readonly',
   'https://www.googleapis.com/auth/chat.messages.readonly',
