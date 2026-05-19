@@ -1,11 +1,10 @@
 import { google } from 'googleapis'
 import fs from 'fs'
-import os from 'os'
 import path from 'path'
-import { getWorkspacePath, writeWorkspaceJSON } from './workspace'
+import { getWorkspacePath, getWorkspaceRoot, writeWorkspaceJSON } from './workspace'
 
 const TOKEN_FILE = path.join(
-  process.env.WORKSPACE_PATH ?? path.join(os.homedir(), '.openclaw', 'workspace'),
+  getWorkspaceRoot(),
   'googlechat-token.json'
 )
 

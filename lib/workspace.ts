@@ -3,7 +3,13 @@ import os from 'os'
 import path from 'path'
 import { ParsedEmail } from './gmail'
 
-const WORKSPACE = process.env.WORKSPACE_PATH || path.join(os.homedir(), '.openclaw', 'workspace')
+export function getWorkspaceRoot() {
+  if (process.env.WORKSPACE_PATH) return process.env.WORKSPACE_PATH
+  if (process.env.VERCEL || process.env.VERCEL_URL) return '/tmp/openclaw/workspace'
+  return path.join(os.homedir(), '.openclaw', 'workspace')
+}
+
+const WORKSPACE = getWorkspaceRoot()
 
 export function getWorkspacePath(...segments: string[]) {
   return path.join(WORKSPACE, ...segments)

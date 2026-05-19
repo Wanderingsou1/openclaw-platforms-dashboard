@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import fs from 'fs'
-import os from 'os'
 import path from 'path'
 import { getGoogleChatRedirectUriFromRequest } from '@/lib/googlechat'
+import { getWorkspaceRoot } from '@/lib/workspace'
 
-const TOKEN_FILE = path.join(
-  process.env.WORKSPACE_PATH ?? path.join(os.homedir(), '.openclaw', 'workspace'),
-  'googlechat-token.json'
-)
+const TOKEN_FILE = path.join(getWorkspaceRoot(), 'googlechat-token.json')
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
