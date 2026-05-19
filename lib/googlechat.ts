@@ -9,8 +9,21 @@ const TOKEN_FILE = path.join(
   'googlechat-token.json'
 )
 
-export const GOOGLE_CHAT_REDIRECT_URI =
-  process.env.GOOGLE_CHAT_REDIRECT_URI ?? 'http://localhost:3000/api/googlechat/callback'
+export function getPublicAppUrl() {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL
+  if (envUrl) return envUrl.replace(/\/$/, '')
+  const vercelUrl = process.env.VERCEL_URL
+  if (vercelUrl) {
+    return vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://')
+      ? vercelUrl.replace(/\/$/, '')
+      : `https://${vercelUrl.replace(/\/$/, '')}`
+  }
+  return 'http://localhost:3000'
+}
+
+export function getGoogleChatRedirectUri() {
+  return process.env.GOOGLE_CHAT_REDIRECT_URI ?? `${getPublicAppUrl()}/api/googlechat/callback`
+}
 
 export const GOOGLE_CHAT_SCOPES = [
   'https://www.googleapis.com/auth/chat.spaces.readonly',
@@ -103,7 +116,7 @@ export function getGoogleChatOAuthClient() {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    GOOGLE_CHAT_REDIRECT_URI
+    getGoogleChatRedirectUri()
   )
 }
 

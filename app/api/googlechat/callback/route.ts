@@ -3,7 +3,7 @@ import { google } from 'googleapis'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { GOOGLE_CHAT_REDIRECT_URI } from '@/lib/googlechat'
+import { getGoogleChatRedirectUri } from '@/lib/googlechat'
 
 const TOKEN_FILE = path.join(
   process.env.WORKSPACE_PATH ?? path.join(os.homedir(), '.openclaw', 'workspace'),
@@ -13,15 +13,16 @@ const TOKEN_FILE = path.join(
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
   const error = req.nextUrl.searchParams.get('error')
+  const homeUrl = new URL('/', req.url).toString()
 
   if (error || !code) {
-    return NextResponse.redirect('http://localhost:3000/?googlechat=denied')
+    return NextResponse.redirect(`${homeUrl}?googlechat=denied`)
   }
 
   const oauth2 = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    GOOGLE_CHAT_REDIRECT_URI
+    getGoogleChatRedirectUri()
   )
 
   try {
@@ -40,9 +41,9 @@ export async function GET(req: NextRequest) {
     fs.mkdirSync(path.dirname(TOKEN_FILE), { recursive: true })
     fs.writeFileSync(TOKEN_FILE, JSON.stringify({ ...tokens, email, connectedAt: new Date().toISOString() }, null, 2))
 
-    return NextResponse.redirect(`http://localhost:3000/?googlechat=connected&email=${encodeURIComponent(email)}`)
+    return NextResponse.redirect(`${homeUrl}?googlechat=connected&email=${encodeURIComponent(email)}`)
   } catch (err) {
     console.error('Google Chat callback failed', err)
-    return NextResponse.redirect('http://localhost:3000/?googlechat=error')
+    return NextResponse.redirect(`${homeUrl}?googlechat=error`)
   }
 }
