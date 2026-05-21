@@ -6,6 +6,9 @@ interface TeamsCardProps {
   onImported: () => void
 }
 
+const DEFAULT_TEAMS_WEBHOOK_URL =
+  'https://openclaw-platforms-dashboard.vercel.app/api/teams/webhook'
+
 export default function TeamsCard({ onImported }: TeamsCardProps) {
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
@@ -20,10 +23,9 @@ export default function TeamsCard({ onImported }: TeamsCardProps) {
   const [error, setError] = useState('')
   const [warning, setWarning] = useState('')
 
-  const defaultWebhookUrl = useMemo(
-    () => 'https://companion-oxford-seldom.ngrok-free.app/api/teams/webhook',
-    []
-  )
+  const defaultWebhookUrl = useMemo(() => {
+    return DEFAULT_TEAMS_WEBHOOK_URL
+  }, [])
 
   useEffect(() => {
     if (defaultWebhookUrl && !webhookUrl) {
@@ -37,14 +39,17 @@ export default function TeamsCard({ onImported }: TeamsCardProps) {
     fetch('/api/teams/status')
       .then((r) => r.json())
       .then((data) => {
+        const suggestedWebhookUrl = data.suggestedWebhookUrl ?? defaultWebhookUrl
         if (data.connected) {
           setConnected(true)
           setAccountName(data.accountName ?? '')
           setTenantId(data.tenantId ?? '')
           setDefaultChatId(data.defaultChatId ?? '')
-          setWebhookUrl(data.webhookUrl ?? defaultWebhookUrl)
+          setWebhookUrl(data.webhookUrl ?? suggestedWebhookUrl)
           setSubscriptionExpiry(data.subscriptionExpiry ?? '')
           setImportCount(data.importedCount ?? 0)
+        } else if (suggestedWebhookUrl) {
+          setWebhookUrl((current) => current || suggestedWebhookUrl)
         }
       })
       .catch(() => {})
@@ -237,7 +242,8 @@ export default function TeamsCard({ onImported }: TeamsCardProps) {
             autoComplete="off"
           />
           <p className="text-[10px] text-zinc-500 leading-relaxed">
-            Using ngrok webhook: <span className="text-zinc-300 break-all">{defaultWebhookUrl}</span>
+            Webhook for this deployment:{' '}
+            <span className="text-zinc-300 break-all">{defaultWebhookUrl || 'Loading deployment URL…'}</span>
           </p>
         </div>
       )}
