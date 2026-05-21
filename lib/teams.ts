@@ -33,6 +33,34 @@ const TOKEN_BUFFER_MS = 60_000
 
 const TEAMS_CLIENT_STATE =
   process.env.TEAMS_CLIENT_STATE?.trim() || 'openclaw-teams-secret-change-me'
+export const DEFAULT_TEAMS_WEBHOOK_URL =
+  'https://openclaw-platforms-dashboard.vercel.app/api/teams/webhook'
+
+export function getPublicAppUrl() {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL
+  if (envUrl) return envUrl.replace(/\/$/, '')
+
+  const vercelUrl = process.env.VERCEL_URL
+  if (vercelUrl) {
+    return vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://')
+      ? vercelUrl.replace(/\/$/, '')
+      : `https://${vercelUrl.replace(/\/$/, '')}`
+  }
+
+  return 'http://localhost:3000'
+}
+
+export function getTeamsWebhookUrl(baseUrl = getPublicAppUrl()) {
+  return new URL('/api/teams/webhook', baseUrl).toString()
+}
+
+export function getDefaultTeamsWebhookUrl() {
+  return process.env.TEAMS_WEBHOOK_URL?.trim() || DEFAULT_TEAMS_WEBHOOK_URL
+}
+
+export function getTeamsWebhookUrlFromRequest(requestUrl: string) {
+  return new URL('/api/teams/webhook', requestUrl).toString()
+}
 
 const tokenCache = new Map<string, { token: string; expiresAt: number }>()
 

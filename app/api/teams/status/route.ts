@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
-import { loadTeamsConfig, readLatestTeamsImport } from '@/lib/teams'
+import {
+  getDefaultTeamsWebhookUrl,
+  loadTeamsConfig,
+  readLatestTeamsImport,
+} from '@/lib/teams'
 
 export async function GET() {
   const config = loadTeamsConfig()
@@ -9,6 +13,7 @@ export async function GET() {
     tenantId: config?.tenantId ?? '',
     defaultChatId: config?.defaultChatId ?? '',
     webhookUrl: config?.webhookUrl ?? '',
+    suggestedWebhookUrl: getDefaultTeamsWebhookUrl(),
     subscriptionId: config?.subscriptionId ?? '',
     subscriptionExpiry: config?.subscriptionExpiry ?? '',
     importedCount: readLatestTeamsImport().length,

@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   createTeamsSubscription,
+  getDefaultTeamsWebhookUrl,
   saveTeamsConfig,
   verifyTeamsConnection,
 } from '@/lib/teams'
-
-const DEFAULT_WEBHOOK_URL =
-  process.env.TEAMS_WEBHOOK_URL?.trim() ||
-  'https://companion-oxford-seldom.ngrok-free.app/api/teams/webhook'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +12,8 @@ export async function POST(req: NextRequest) {
     const id = String(clientId ?? '').trim()
     const secret = String(clientSecret ?? '').trim()
     const tenant = String(tenantId ?? '').trim()
-    const webhook = String(webhookUrl ?? DEFAULT_WEBHOOK_URL).trim() || DEFAULT_WEBHOOK_URL
+    const defaultWebhookUrl = getDefaultTeamsWebhookUrl()
+    const webhook = String(webhookUrl ?? defaultWebhookUrl).trim() || defaultWebhookUrl
     const chatId = String(defaultChatId ?? '').trim()
 
     if (!id || !secret || !tenant || !webhook) {
